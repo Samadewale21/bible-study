@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Word</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one narrow column, sticker-style controls with hard edges, one screen at a time.
+     Welcome -> topic of the week -> quiz (one question per screen) -> results with all answers. */
+  :root {
+    --bg: #F4F5FA;
+    --surface: #FFFFFF;
+    --fg: #14172B;
+    --muted: #596079;
+    --line: #D9DDEE;
+    --edge: #14172B;
+    --accent: #2F4BFF;
+    --accent-fg: #FFFFFF;
+    --hl: #FFE14D;
+    --hl-fg: #14172B;
+    --good: #0F7A55;
+    --good-bg: #DDF4EA;
+    --bad: #B82E1C;
+    --bad-bg: #FDE7E2;
+    --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1120; --surface: #181C32; --fg: #EEF0FA; --muted: #9CA2C2; --line: #2B3153;
+      --edge: #05060F; --accent: #8EA0FF; --accent-fg: #0E1120;
+      --good: #54D6A1; --good-bg: #12362B; --bad: #FF9382; --bad-bg: #3B1D1A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1120; --surface: #181C32; --fg: #EEF0FA; --muted: #9CA2C2; --line: #2B3153;
+    --edge: #05060F; --accent: #8EA0FF; --accent-fg: #0E1120;
+    --good: #54D6A1; --good-bg: #12362B; --bad: #FF9382; --bad-bg: #3B1D1A;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 400 1.0625rem/1.55 var(--body);
+    padding-inline: 20px; padding-block: 20px 56px;
+  }
+  .wrap { max-width: 720px; margin-inline: auto; display: flex; flex-direction: column; gap: 28px; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; letter-spacing: -0.01em; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  [tabindex="-1"]:focus { outline: none; }
+
+  /* top bar */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+  .brand { font: 800 1.15rem var(--display); letter-spacing: -0.01em; }
+  .brand mark, .hero mark {
+    background: var(--hl); color: var(--hl-fg); padding: 0 .25em; border-radius: 4px;
+    display: inline-block; transform: rotate(-2deg);
+  }
+  .who { font: 500 .8rem var(--mono); color: var(--muted); display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
+
+  /* buttons */
+  .btn {
+    font: 700 1rem var(--body); cursor: pointer;
+    padding: .85rem 1.4rem; background: var(--accent); color: var(--accent-fg);
+    border: 2px solid var(--edge); border-radius: 10px; box-shadow: 0 4px 0 var(--edge);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--edge); }
+  .btn.ghost { background: var(--surface); color: var(--fg); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform: translateY(4px); }
+  .link {
+    font: 500 .85rem var(--mono); background: none; border: 0; padding: 4px 0; cursor: pointer;
+    color: var(--muted); text-decoration: underline; text-underline-offset: 3px;
+  }
+  .link:hover { color: var(--fg); }
+
+  /* welcome */
+  .hero { display: flex; flex-direction: column; gap: 18px; padding-top: 12px; }
+  .hero h1 { font-size: clamp(3rem, 14vw, 5.5rem); font-weight: 800; line-height: .95; }
+  .hero p { color: var(--muted); max-width: 34ch; font-size: 1.15rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    font: 500 .8rem var(--mono); padding: .3rem .6rem; border: 2px solid var(--edge);
+    border-radius: 6px; background: var(--surface);
+  }
+  .tag:nth-child(odd) { transform: rotate(-2deg); }
+  .tag:nth-child(even) { transform: rotate(1.5deg); background: var(--hl); color: var(--hl-fg); }
+  .namebox { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 2px solid var(--edge); border-radius: 14px; padding: 20px; }
+  .namebox label { font: 700 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .namebox input {
+    font: 600 1.4rem var(--display); width: 100%; padding: .6rem .8rem; color: var(--fg);
+    background: var(--bg); border: 2px solid var(--line); border-radius: 10px;
+  }
+  .namebox input:focus { border-color: var(--accent); outline: none; }
+  .namebox .btn { align-self: flex-start; margin-top: 6px; }
+  .err { color: var(--bad); font-weight: 500; min-height: 1.4em; font-size: .95rem; }
+
+  /* topics */
+  .head h2 { font-size: clamp(1.9rem, 7vw, 2.6rem); font-weight: 800; }
+  .head p { color: var(--muted); margin-top: 8px; }
+  .topics { display: flex; flex-direction: column; gap: 16px; }
+  .topic {
+    text-align: left; font: inherit; color: var(--fg); cursor: pointer;
+    background: var(--surface); border: 2px solid var(--edge); border-radius: 14px; padding: 20px;
+    box-shadow: 0 5px 0 var(--edge); display: flex; flex-direction: column; gap: 10px; width: 100%;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .topic:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--edge); }
+  .topic:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge); }
+  .topic .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .wk { font: 500 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .badge { font: 500 .75rem var(--mono); padding: .15rem .55rem; border-radius: 99px; background: var(--hl); color: var(--hl-fg); border: 2px solid var(--edge); }
+  .topic h3 { font-size: 1.8rem; font-weight: 800; }
+  .topic .sub { color: var(--muted); }
+  .topic .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 .8rem var(--mono); color: var(--muted); }
+  .topic .go { font-weight: 700; color: var(--accent); }
+  .topic.soon { cursor: default; box-shadow: none; border: 2px dashed var(--line); background: transparent; }
+  .topic.soon:hover, .topic.soon:active { transform: none; box-shadow: none; }
+  .topic.soon h3 { font-size: 1.25rem; color: var(--muted); font-weight: 600; }
+
+  /* quiz */
+  .qtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .count { font: 500 .9rem var(--mono); font-variant-numeric: tabular-nums; }
+  .bar { height: 12px; border: 2px solid var(--edge); border-radius: 99px; background: var(--surface); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); transition: width .25s; }
+  .kicker { font: 500 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .q { font-size: clamp(1.45rem, 5.2vw, 2rem); font-weight: 600; line-height: 1.2; }
+  .opts { display: flex; flex-direction: column; gap: 12px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 14px; text-align: left; width: 100%;
+    font: 500 1.05rem/1.4 var(--body); color: var(--fg); cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 14px 16px;
+    transition: border-color .1s, transform .1s;
+  }
+  .opt:hover { border-color: var(--edge); }
+  .opt .ltr {
+    flex: none; width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center;
+    font: 500 .9rem var(--mono); border: 2px solid var(--edge); background: var(--bg);
+  }
+  .opt span:last-child { padding-top: 3px; min-width: 0; overflow-wrap: anywhere; }
+  .opt.on { background: var(--hl); color: var(--hl-fg); border-color: var(--edge); box-shadow: 0 4px 0 var(--edge); transform: translateY(-2px); }
+  .opt.on .ltr { background: var(--edge); color: var(--hl); }
+  .nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  /* results */
+  .score { display: flex; flex-direction: column; gap: 14px; background: var(--surface); border: 2px solid var(--edge); border-radius: 14px; padding: 24px; box-shadow: 0 5px 0 var(--edge); }
+  .score .big { font: 800 clamp(3.5rem, 18vw, 6rem)/1 var(--display); font-variant-numeric: tabular-nums; }
+  .score .big small { font-size: .4em; color: var(--muted); font-weight: 600; }
+  .score h2 { font-size: 1.6rem; }
+  .score p { color: var(--muted); }
+  .score .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .filters h3 { font-size: 1.4rem; font-weight: 800; }
+  .chips { display: flex; gap: 8px; }
+  .chip { font: 500 .85rem var(--mono); padding: .4rem .8rem; border: 2px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--fg); cursor: pointer; }
+  .chip[aria-pressed="true"] { border-color: var(--edge); background: var(--fg); color: var(--bg); }
+  .reviews { display: flex; flex-direction: column; gap: 14px; }
+  .rev { background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .rev.ok { border-color: var(--good); }
+  .rev.bad { border-color: var(--bad); }
+  .rev header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .rev .n { font: 500 .85rem var(--mono); color: var(--muted); }
+  .pill { font: 500 .75rem var(--mono); padding: .1rem .55rem; border-radius: 99px; }
+  .ok .pill { background: var(--good-bg); color: var(--good); }
+  .bad .pill { background: var(--bad-bg); color: var(--bad); }
+  .ref { margin-left: auto; font: 500 .75rem var(--mono); background: var(--hl); color: var(--hl-fg); padding: .1rem .5rem; border-radius: 5px; }
+  .rev h3 { font-size: 1.2rem; font-weight: 600; line-height: 1.3; }
+  .rev dl { margin: 0; display: grid; gap: 8px; }
+  .rev dl div { display: grid; grid-template-columns: 8.5rem 1fr; gap: 10px; }
+  .rev dt { font: 500 .8rem var(--mono); color: var(--muted); padding-top: 3px; }
+  .rev dd { margin: 0; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+  .rev dd.right { color: var(--good); }
+  .rev dd.wrong { color: var(--bad); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .why { color: var(--muted); font-size: .98rem; }
+  .foot { font: 400 .8rem var(--mono); color: var(--muted); text-align: center; }
+
+  @media (max-width: 480px) {
+    .rev dl div { grid-template-columns: 1fr; gap: 0; }
+    .btn { padding-inline: 1.1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+  :root { color-scheme: light; }
+  body { margin: 0; }
+  .sendnote { font: 500 .9rem var(--mono); color: var(--muted); min-height: 1.4em; }
+  .sendnote button { margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top" id="top"></div>
+  <main id="app" aria-live="polite"></main>
+  <p class="foot">Scripture quotations follow the KJV.</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- EMAIL SETUP ----------
+     Paste your Formspree form address between the quotes, e.g. "https://formspree.io/f/abcd1234".
+     Formspree forwards every result to the email address you registered there. */
+  var RESULTS_ENDPOINT = "https://formspree.io/f/xqpebkdo";
+
+  /* ---------- Content: add a new weekly topic by adding an object to TOPICS ---------- */
+  // Each question: [reference, question, [A, B, C, D], index of correct option, explanation]
+  var SALVATION = [
+    ["Matthew 1:21", "According to Matthew 1:21, why was He to be called JESUS?",
+      ["Because He would be king of Israel", "Because He would save His people from their sins", "Because He would heal the sick", "Because He would fulfil the law"], 1,
+      "The angel said: “thou shalt call his name JESUS: for he shall save his people from their sins.”"],
+    ["Theme: Matt 1:21; Isa 53; Col 1:13", "Salvation, as taught in this study, is freedom from which of the following?",
+      ["Sin, Satan, sicknesses and evil consequences", "Only the penalty of death", "Only the guilt of past sins", "Hardship and all earthly trials"], 0,
+      "Salvation is freedom from sin, Satan, sicknesses and evil consequences through the finished work of Christ."],
+    ["Romans 5:1", "Romans 5:1 says that being justified by faith, we have:",
+      ["Riches in this life", "Freedom from all trials", "Peace with God through our Lord Jesus Christ", "Perfect knowledge"], 2,
+      "Justification by faith gives us peace with God through Jesus Christ."],
+    ["Romans 5:8", "Romans 5:8 says God commended His love toward us in that:",
+      ["He gave us the law", "He sent prophets", "He created the world", "While we were yet sinners, Christ died for us"], 3,
+      "Christ died for us while we were still sinners. His love came before we deserved it."],
+    ["Romans 5:12", "According to Romans 5:12, through whom did sin enter the world?",
+      ["One man (Adam)", "Moses", "Satan alone", "Cain"], 0,
+      "By one man sin entered into the world, and death by sin."],
+    ["Romans 5:10", "Romans 5:10 says we were reconciled to God by:",
+      ["Our good works", "Keeping the law", "The death of His Son", "Offering animal sacrifices"], 2,
+      "When we were enemies, we were reconciled to God by the death of His Son."],
+    ["Romans 5:20", "Romans 5:20 declares that where sin abounded:",
+      ["Judgment abounded more", "Grace did much more abound", "Death reigned forever", "The law increased"], 1,
+      "Grace is greater than sin. It abounds even more."],
+    ["Romans 5:17", "Romans 5:17 says those who receive abundance of grace and the gift of righteousness shall:",
+      ["Reign in life by one, Jesus Christ", "Be spared all suffering", "Live without temptation", "Become angels"], 0,
+      "Believers reign in life through Jesus Christ."],
+    ["Romans 6:1-2", "In Romans 6:1-2, Paul’s answer to “Shall we continue in sin that grace may abound?” is:",
+      ["Yes, grace covers everything", "Only occasionally", "It depends on the sin", "God forbid; how shall we that are dead to sin live any longer therein?"], 3,
+      "Those who have died to sin cannot keep on living in it."],
+    ["Romans 6:6", "Romans 6:6 says our old man was:",
+      ["Improved by the law", "Buried by baptism only", "Crucified with Christ, that the body of sin might be destroyed", "Left unchanged"], 2,
+      "The old man was crucified with Christ so that we should no longer serve sin."],
+    ["Romans 6:7", "Romans 6:7 says “He that is dead is ______ from sin.”",
+      ["Separated", "Freed", "Hidden", "Judged"], 1,
+      "The one who has died with Christ is freed from sin."],
+    ["Romans 6:14", "Why does Romans 6:14 say sin shall not have dominion over believers?",
+      ["Because they are not under the law, but under grace", "Because they are perfect", "Because they fast regularly", "Because they obey every commandment"], 0,
+      "Grace, not the law, gives power over sin."],
+    ["Romans 6:23", "Romans 6:23 says the wages of sin is death, but the gift of God is:",
+      ["Great wealth", "Long life on earth", "Wisdom", "Eternal life through Jesus Christ our Lord"], 3,
+      "Death is what sin earns. Eternal life is a free gift."],
+    ["Romans 7:24-25", "In Romans 7:24-25, after asking “Who shall deliver me from the body of this death?”, Paul answers:",
+      ["The law of Moses", "My own effort", "I thank God through Jesus Christ our Lord", "The priests"], 2,
+      "Deliverance comes through Jesus Christ, not through self-effort or the law."],
+    ["Romans 8:1", "Romans 8:1 says there is now no ______ to them which are in Christ Jesus.",
+      ["Trouble", "Temptation", "Condemnation", "Suffering"], 2,
+      "There is therefore now no condemnation to them which are in Christ Jesus."],
+    ["Romans 8:2", "According to Romans 8:2, the law of the Spirit of life in Christ Jesus has made us free from:",
+      ["The law of sin and death", "All responsibility", "The need for prayer", "The Ten Commandments"], 0,
+      "A higher law, the Spirit of life, sets us free from the law of sin and death."],
+    ["Romans 8:11", "Romans 8:11 says the Spirit who raised Jesus from the dead, dwelling in us, will also:",
+      ["Remove all trials", "Quicken our mortal bodies", "Give us earthly riches", "Teach us all languages"], 1,
+      "The Spirit of the resurrection gives life to our mortal bodies. This is a promise of renewal and healing."],
+    ["Romans 8:14", "Romans 8:14 says that as many as are led by the Spirit of God are:",
+      ["Servants", "Prophets", "The sons of God", "Priests only"], 2,
+      "Those led by the Spirit of God are the sons of God."],
+    ["Romans 8:15", "Romans 8:15 says we have received the Spirit of adoption, whereby we cry:",
+      ["Lord, have mercy", "Abba, Father", "Hosanna", "Holy, holy, holy"], 1,
+      "We did not receive a spirit of bondage and fear, but the Spirit of adoption: “Abba, Father.”"],
+    ["Romans 8:28", "Romans 8:28 says all things work together for good to them that:",
+      ["Give the most", "Fast often", "Never doubt", "Love God, to them who are the called according to His purpose"], 3,
+      "God works all things together for good for those who love Him and are called by Him."],
+    ["Romans 8:31", "Romans 8:31 asks, “If God be for us, ______?”",
+      ["Who can be against us?", "What shall we fear?", "Who shall doubt?", "Why do we suffer?"], 0,
+      "With God on our side, no opposition can finally win."],
+    ["Romans 8:37", "Romans 8:37 says in all these things we are:",
+      ["Safe from harm", "More than conquerors through Him that loved us", "Free of all pain", "Equal to angels"], 1,
+      "Victory comes through Christ’s love, not through our own strength."],
+    ["Romans 8:38-39", "Romans 8:38-39 says nothing shall be able to separate us from:",
+      ["The church", "Earthly comfort", "The love of God, which is in Christ Jesus our Lord", "The law"], 2,
+      "Neither death, life, angels, principalities, powers nor any creature can separate us from God’s love."],
+    ["Colossians 1:13", "Colossians 1:13 says God has delivered us from:",
+      ["The power of darkness", "The world’s people", "The need to work", "All earthly authority"], 0,
+      "God delivered us from the power of darkness, which is Satan’s rule."],
+    ["Colossians 1:13", "According to Colossians 1:13, God translated us into:",
+      ["The land of Canaan", "The kingdom of His dear Son", "A new earth", "The temple"], 1,
+      "We were moved out of darkness and into the kingdom of His dear Son."],
+    ["Isaiah 53:3", "Isaiah 53:3 describes the Messiah as:",
+      ["A mighty warrior", "A wealthy king", "A wise teacher", "A man of sorrows, and acquainted with grief"], 3,
+      "He was despised and rejected, a man of sorrows, acquainted with grief."],
+    ["Isaiah 53:4", "Isaiah 53:4 says that surely He hath borne our ______ and carried our ______.",
+      ["Sins; guilt", "Burdens; chains", "Griefs; sorrows", "Debts; shame"], 2,
+      "Surely he hath borne our griefs, and carried our sorrows."],
+    ["Isaiah 53:5", "Isaiah 53:5 says He was wounded for our transgressions and bruised for our:",
+      ["Iniquities", "Weaknesses", "Enemies", "Nations"], 0,
+      "He was wounded for our transgressions, he was bruised for our iniquities."],
+    ["Isaiah 53:5; 1 Peter 2:24", "Isaiah 53:5 says “with his stripes we are healed.” 1 Peter 2:24 repeats this and adds that Christ bore our sins in His own body on the tree so that we, being dead to sins, should:",
+      ["Live unto righteousness", "Preach to the nations", "Build the temple", "Await judgment"], 0,
+      "1 Peter 2:24: Christ bore our sins on the tree, that we, being dead to sins, should live unto righteousness. By His stripes we were healed."],
+    ["1 John 4:4", "1 John 4:4 assures believers: “Greater is he that is in you, than he that is ______.”",
+      ["In the flesh", "In heaven", "Against you", "In the world"], 3,
+      "Believers have overcome, because Christ in them is greater than Satan and the spirit of the world."]
+  ];
+
+  var TOPICS = [
+    {
+      id: "salvation", week: 1, title: "Salvation",
+      sub: "Freedom from sin, Satan, sicknesses and evil consequences through the finished work of Christ.",
+      passages: "Matthew 1:21 · Romans 5–8 · Colossians 1:13 · Isaiah 53:3-5 · 1 Peter 2:24 · 1 John 4:4",
+      questions: SALVATION.map(function (r) { return { ref: r[0], p: r[1], o: r[2], a: r[3], why: r[4] }; })
+    },
+    { id: "w2", week: 2, soon: true },
+    { id: "w3", week: 3, soon: true }
+  ];
+
+  /* ---------- State ---------- */
+  var S = { name: "", screen: "welcome", topic: null, i: 0, ans: [], filter: "all", leaving: false, sent: "" };
+  var app = document.getElementById("app");
+  var top = document.getElementById("top");
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function write(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  var LET = "ABCD";
+
+  /* ---------- Top bar ---------- */
+  function renderTop() {
+    if (S.screen === "welcome") {
+      top.innerHTML = '<span class="brand">Weekly <mark>Word</mark></span>';
+      return;
+    }
+    top.innerHTML =
+      '<span class="brand">Weekly <mark>Word</mark></span>' +
+      '<span class="who"><span>' + esc(S.name) + '</span>' +
+      (S.screen === "topics" ? '<button class="link" id="switch" type="button">Not you?</button>' : "") +
+      "</span>";
+    var sw = document.getElementById("switch");
+    if (sw) sw.onclick = function () { S.name = ""; go("welcome"); };
+  }
+
+  function go(screen) {
+    S.screen = screen;
+    renderTop();
+    ({ welcome: welcome, topics: topics, quiz: quiz, results: results })[screen]();
+    window.scrollTo(0, 0);
+    var h = app.querySelector("[tabindex='-1']");
+    if (h && screen !== "welcome") h.focus({ preventScroll: true });
+  }
+
+  /* ---------- Welcome ---------- */
+  function welcome() {
+    app.innerHTML =
+      '<section class="hero">' +
+        '<h1>Weekly <mark>Word</mark></h1>' +
+        '<p>Bible study for teenagers. One topic each week, thirty questions, and the answers at the end.</p>' +
+        '<div class="tags" aria-hidden="true"><span class="tag">Matt 1:21</span><span class="tag">Rom 8:2</span><span class="tag">Isa 53:5</span><span class="tag">1 John 4:4</span></div>' +
+      "</section>" +
+      '<form class="namebox" id="nameform" novalidate>' +
+        '<label for="name">Your name</label>' +
+        '<input id="name" name="name" type="text" autocomplete="given-name" maxlength="40" placeholder="Type your name" value="' + esc(S.name || read("ww:name") || "") + '">' +
+        '<p class="err" id="err" role="alert"></p>' +
+        '<button class="btn" type="submit">Start</button>' +
+      "</form>";
+    document.getElementById("nameform").onsubmit = function (e) {
+      e.preventDefault();
+      var v = document.getElementById("name").value.trim();
+      if (!v) {
+        document.getElementById("err").textContent = "Please type your name to begin.";
+        document.getElementById("name").focus();
+        return;
+      }
+      S.name = v; write("ww:name", v);
+      go("topics");
+    };
+  }
+
+  /* ---------- Topics ---------- */
+  function topics() {
+    var html =
+      '<div class="head"><h2 id="h" tabindex="-1">Hi, ' + esc(S.name) + ".</h2>" +
+      "<p>Pick the topic of the week to begin.</p></div>" +
+      '<div class="topics">';
+    TOPICS.forEach(function (t, k) {
+      if (t.soon) {
+        html += '<div class="topic soon"><div class="row"><span class="wk">Week ' + t.week + '</span></div>' +
+          "<h3>Topic coming soon</h3></div>";
+        return;
+      }
+      var best = read("ww:best:" + t.id);
+      html += '<button class="topic" type="button" data-k="' + k + '">' +
+        '<div class="row"><span class="wk">Week ' + t.week + '</span><span class="badge">This week</span></div>' +
+        "<h3>" + esc(t.title) + "</h3>" +
+        '<p class="sub">' + esc(t.sub) + "</p>" +
+        '<div class="meta"><span>' + t.questions.length + " questions</span>" +
+        (best ? "<span>Your best: " + esc(best) + "/" + t.questions.length + "</span>" : "") + "</div>" +
+        '<p class="meta">' + esc(t.passages) + "</p>" +
+        '<span class="go">Start the quiz →</span></button>';
+    });
+    html += "</div>";
+    app.innerHTML = html;
+    Array.prototype.forEach.call(app.querySelectorAll(".topic[data-k]"), function (b) {
+      b.onclick = function () {
+        S.topic = TOPICS[+b.getAttribute("data-k")];
+        S.i = 0; S.ans = []; S.filter = "all"; S.leaving = false;
+        go("quiz");
+      };
+    });
+  }
+
+  /* ---------- Quiz ---------- */
+  function quiz() {
+    var t = S.topic, q = t.questions[S.i], n = t.questions.length, cur = S.ans[S.i];
+    app.innerHTML =
+      '<section style="display:flex;flex-direction:column;gap:22px">' +
+        '<div class="qtop"><button class="link" id="exit" type="button">' + (S.leaving ? "Tap again to leave" : "Leave quiz") + "</button>" +
+        '<span class="count">' + (S.i + 1) + " / " + n + "</span></div>" +
+        '<div class="bar" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + (S.i + 1) + '"><i style="width:' + ((S.i + 1) / n * 100) + '%"></i></div>' +
+        '<p class="kicker">' + esc(t.title) + " · " + esc(q.ref) + "</p>" +
+        '<h2 class="q" id="qtext" tabindex="-1">' + esc(q.p) + "</h2>" +
+        '<div class="opts" role="radiogroup" aria-labelledby="qtext">' +
+          q.o.map(function (o, k) {
+            return '<button type="button" role="radio" aria-checked="' + (cur === k) + '" class="opt' + (cur === k ? " on" : "") + '" data-k="' + k + '">' +
+              '<span class="ltr">' + LET[k] + "</span><span>" + esc(o) + "</span></button>";
+          }).join("") +
+        "</div>" +
+        '<div class="nav"><button class="btn ghost" id="back" type="button"' + (S.i === 0 ? " disabled" : "") + ">Back</button>" +
+        '<button class="btn" id="next" type="button"' + (cur == null ? " disabled" : "") + ">" +
+        (S.i === n - 1 ? "Finish and see answers" : "Next") + "</button></div>" +
+      "</section>";
+
+    var opts = app.querySelectorAll(".opt"), next = document.getElementById("next");
+    function pick(k) {
+      S.ans[S.i] = k;
+      Array.prototype.forEach.call(opts, function (b, j) {
+        b.classList.toggle("on", j === k);
+        b.setAttribute("aria-checked", String(j === k));
+      });
+      next.disabled = false;
+    }
+    Array.prototype.forEach.call(opts, function (b) {
+      b.onclick = function () { pick(+b.getAttribute("data-k")); };
+    });
+    next.onclick = function () {
+      if (S.ans[S.i] == null) return;
+      if (S.i === n - 1) { finish(); } else { S.i++; S.leaving = false; go("quiz"); }
+    };
+    document.getElementById("back").onclick = function () { if (S.i > 0) { S.i--; go("quiz"); } };
+    document.getElementById("exit").onclick = function () {
+      if (S.leaving) { S.leaving = false; go("topics"); }
+      else { S.leaving = true; this.textContent = "Tap again to leave"; }
+    };
+  }
+
+  function scoreOf() {
+    return S.topic.questions.reduce(function (a, q, k) { return a + (S.ans[k] === q.a ? 1 : 0); }, 0);
+  }
+  function finish() {
+    var s = scoreOf(), key = "ww:best:" + S.topic.id, prev = parseInt(read(key) || "-1", 10);
+    if (s > prev) write(key, String(s));
+    S.filter = "all"; S.sent = "";
+    go("results");
+    sendResult();
+  }
+
+  /* ---------- Results ---------- */
+  function verdict(s, n) {
+    var p = s / n;
+    if (p >= 0.9) return ["Outstanding work", "You know this topic well. Share what you learned with someone this week."];
+    if (p >= 0.7) return ["Strong work", "Check the ones you missed below and look up their verses."];
+    if (p >= 0.5) return ["Good start", "Read the passages again, then retake the quiz to improve your score."];
+    return ["Keep going", "Read " + S.topic.passages + " again, then try the quiz once more."];
+  }
+  function results() {
+    var t = S.topic, n = t.questions.length, s = scoreOf(), v = verdict(s, n);
+    app.innerHTML =
+      '<section class="score">' +
+        '<p class="kicker">' + esc(S.name) + " · " + esc(t.title) + "</p>" +
+        '<p class="big" aria-label="' + s + " out of " + n + '">' + s + "<small> / " + n + "</small></p>" +
+        '<h2 id="h" tabindex="-1">' + esc(v[0]) + ", " + esc(S.name) + "</h2>" +
+        "<p>" + esc(v[1]) + "</p>" +
+        '<p class="sendnote" id="sendnote" role="status"></p>' +
+        '<div class="actions"><button class="btn" id="retake" type="button">Retake quiz</button>' +
+        '<button class="btn ghost" id="more" type="button">Back to topics</button></div>' +
+      "</section>" +
+      '<div class="filters"><h3>Answers</h3><div class="chips">' +
+        '<button class="chip" type="button" data-f="all" aria-pressed="true">All ' + n + "</button>" +
+        '<button class="chip" type="button" data-f="missed" aria-pressed="false">Missed ' + (n - s) + "</button>" +
+      "</div></div>" +
+      '<div class="reviews" id="reviews"></div>';
+    drawReviews();
+    showSendState();
+    document.getElementById("retake").onclick = function () { S.i = 0; S.ans = []; S.leaving = false; go("quiz"); };
+    document.getElementById("more").onclick = function () { go("topics"); };
+    Array.prototype.forEach.call(app.querySelectorAll(".chip"), function (c) {
+      c.onclick = function () {
+        S.filter = c.getAttribute("data-f");
+        Array.prototype.forEach.call(app.querySelectorAll(".chip"), function (x) {
+          x.setAttribute("aria-pressed", String(x === c));
+        });
+        drawReviews();
+      };
+    });
+  }
+  function drawReviews() {
+    var t = S.topic, box = document.getElementById("reviews"), html = "";
+    t.questions.forEach(function (q, k) {
+      var mine = S.ans[k], ok = mine === q.a;
+      if (S.filter === "missed" && ok) return;
+      html += '<article class="rev ' + (ok ? "ok" : "bad") + '">' +
+        '<header><span class="n">Q' + (k + 1) + '</span><span class="pill">' + (ok ? "Correct" : "Missed") + '</span><span class="ref">' + esc(q.ref) + "</span></header>" +
+        "<h3>" + esc(q.p) + "</h3><dl>" +
+        (ok ? "" : "<div><dt>Your answer</dt><dd class=\"wrong\">" + LET[mine] + ". " + esc(q.o[mine]) + "</dd></div>") +
+        "<div><dt>Correct answer</dt><dd class=\"right\">" + LET[q.a] + ". " + esc(q.o[q.a]) + "</dd></div></dl>" +
+        '<p class="why">' + esc(q.why) + "</p></article>";
+    });
+    box.innerHTML = html || '<p class="why">You got every question right. Nothing to review.</p>';
+  }
+
+  /* ---------- Email the result ---------- */
+  function resultMessage() {
+    var t = S.topic, n = t.questions.length, s = scoreOf(), lines = [];
+    lines.push("Student: " + S.name);
+    lines.push("Topic: Week " + t.week + " - " + t.title);
+    lines.push("Score: " + s + " / " + n + " (" + Math.round(s / n * 100) + "%)");
+    lines.push("Taken: " + new Date().toLocaleString());
+    lines.push("");
+    var missed = [];
+    t.questions.forEach(function (q, k) {
+      if (S.ans[k] !== q.a) {
+        missed.push("Q" + (k + 1) + " (" + q.ref + "): chose " + LET[S.ans[k]] + ". " + q.o[S.ans[k]] +
+          "  |  correct: " + LET[q.a] + ". " + q.o[q.a]);
+      }
+    });
+    lines.push(missed.length ? "Missed questions (" + missed.length + "):" : "All questions answered correctly.");
+    return lines.concat(missed).join("\n");
+  }
+  function sendResult() {
+    if (!RESULTS_ENDPOINT || RESULTS_ENDPOINT.indexOf("YOUR_FORM_ID") > -1) { S.sent = "off"; showSendState(); return; }
+    var t = S.topic, n = t.questions.length, s = scoreOf();
+    S.sent = "sending"; showSendState();
+    fetch(RESULTS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        _subject: "Weekly Word: " + S.name + " scored " + s + "/" + n + " on " + t.title,
+        name: S.name, topic: t.title, score: s + "/" + n,
+        percent: Math.round(s / n * 100) + "%",
+        message: resultMessage()
+      })
+    }).then(function (r) { S.sent = r.ok ? "sent" : "failed"; })
+      .catch(function () { S.sent = "failed"; })
+      .then(showSendState);
+  }
+  function showSendState() {
+    var el = document.getElementById("sendnote");
+    if (!el) return;
+    var msg = { sending: "Sending your result to your teacher...", sent: "Your result was sent to your teacher.",
+      failed: "Your result could not be sent. Check your internet connection.", off: "", "": "" }[S.sent] || "";
+    el.textContent = msg;
+    if (S.sent === "failed") {
+      var b = document.createElement("button");
+      b.className = "link"; b.type = "button"; b.textContent = "Try again";
+      b.onclick = sendResult;
+      el.appendChild(b);
+    }
+  }
+
+  /* ---------- Keyboard: A-D picks an option, Enter goes next ---------- */
+  document.addEventListener("keydown", function (e) {
+    if (S.screen !== "quiz" || e.ctrlKey || e.metaKey || e.altKey) return;
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    var k = "abcd".indexOf(e.key.toLowerCase());
+    if (e.key.length === 1 && k > -1) {
+      var b = app.querySelectorAll(".opt")[k];
+      if (b) b.click();
+    }
+  });
+
+  S.name = "";
+  go("welcome");
+})();
+</script>
+</body>
+</html>
